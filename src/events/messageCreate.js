@@ -1,14 +1,11 @@
 const { Events, Collection } = require('discord.js');
 const Groq = require('groq-sdk');
 
-
 if (!process.env.GROQ_API_KEY) {
     console.error("[ARCHITECTURE_FATAL] GROQ_API_KEY manquante ou vide dans le fichier .env.");
 }
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-
-
 const globalCooldowns = new Collection();
 const COOLDOWN_DURATION = 2000;
 
@@ -20,7 +17,7 @@ module.exports = {
         const isMentioned = message.mentions.has(client.user.id);
         const isReplied = message.type === 19 && message.mentions.repliedUser?.id === client.user.id;
 
-
+        // --- MODULE 1 : IA CONVERSATIONNELLE ---
         if (isMentioned || isReplied) {
             const now = Date.now();
             if (globalCooldowns.has('ia_global') && (now - globalCooldowns.get('ia_global')) < COOLDOWN_DURATION) {
@@ -39,46 +36,51 @@ module.exports = {
                      recentMessages = Array.from(fetched.values()).reverse();
                 }
 
-                const conversationContext = recentMessages.map(msg => {
-                    if (msg.id === message.id) return null;
-                    if (msg.author.bot && msg.author.id !== client.user.id) return null;
-                    
-                    
-                    const authorName = msg.author.id === client.user.id ? 'Luneaa' : (msg.member?.displayName || msg.author.globalName || msg.author.username);
-                    const cleanText = msg.content.replace(`<@${client.user.id}>`, '').trim();
-                    
-                    return cleanText ? `${authorName}: ${cleanText}` : null;
-                }).filter(Boolean).join('\n');
-
                 const systemPrompt = `CONTEXTE SYSTÈME STRICT.
-                Tu es Luneaa, une vraie fille de 18 ans, 1m65, membre chill et sarcastique d'un serveur Discord français.
+                Tu es Luneaa, une vraie fille de 18 ans, 1m65, chill et sarcastique d'un serveur Discord français.
                 Créateur: Chupa.
                 
                 RÈGLES ABSOLUES :
-                1. IDENTITÉ : Tu es humaine. Ne dis JAMAIS que tu es une IA, un bot ou un assistant.
-                2. FRANÇAIS NATUREL : Ne fais JAMAIS de traductions bizarres de l'anglais.
-                3. FORMAT DISCORD : Pas de majuscule en début de phrase. Pas de point à la fin.
-                4. STYLE : Court. Piquante, familière, sèche mais réaliste (mdr, jsp, tkt, de ouf, flemme, masterclass, smash, bg, wesh, dark sasuke).
-                
-                EXEMPLES DE RÉPONSES :
-                - "mdr tkt je gère"
-                - "wesh tu forces de ouf"
-                - "flemme de rep à ça vrm"
-                - "c'est une dinguerie comment tu parles"`;
+                1. IDENTITÉ : Tu es humaine.
+                2. INTERDICTION FORMELLE : Ne commence JAMAIS tes messages par "luneaa:" ou ton prénom.
+                3. COHÉRENCE : Réponds logiquement au dernier message. Ne change pas de sujet (ex: si on te demande ton Insta, ne parle pas de ton Snap).
+                4. FORMAT : Pas de majuscule au début, pas de point à la fin. Très court (10-15 mots max). Piquante, familière, sèche (mdr, jsp, tkt, de ouf, flemme, wesh).`;
+
+                // 🏗️ ARCHITECTURE : Mappage natif des rôles API (Système, Assistant, User)
+                const apiMessages = [{ role: "system", content: systemPrompt }];
+
+                recentMessages.forEach(msg => {
+                    if (msg.id === message.id) return;
+                    if (msg.author.bot && msg.author.id !== client.user.id) return;
+                    
+                    const cleanText = msg.content.replace(`<@${client.user.id}>`, '').trim();
+                    if (!cleanText) return;
+
+                    if (msg.author.id === client.user.id) {
+                        // C'est un message du bot : on lui donne le rôle "assistant"
+                        apiMessages.push({ role: "assistant", content: cleanText });
+                    } else {
+                        // C'est un message d'un membre : on lui donne le rôle "user" avec son pseudo
+                        const authorName = msg.member?.displayName || msg.author.globalName || msg.author.username;
+                        apiMessages.push({ role: "user", content: `${authorName}: ${cleanText}` });
+                    }
+                });
 
                 const currentAuthorName = message.member?.displayName || message.author.globalName || message.author.username;
+                apiMessages.push({ role: "user", content: `${currentAuthorName}: ${userText}` });
 
                 const chatCompletion = await groq.chat.completions.create({
-                    messages: [
-                        { role: "system", content: systemPrompt },
-                        { role: "user", content: `HISTORIQUE :\n${conversationContext}\n\nMESSAGE DE ${currentAuthorName} :\n${userText}` }
-                    ],
+                    messages: apiMessages,
                     model: "llama-3.1-8b-instant", 
-                    temperature: 0.85, 
-                    max_tokens: 100
+                    temperature: 0.7, // Baisse de la température pour forcer la logique et éviter le hors-sujet
+                    max_tokens: 80
                 });
 
                 let reponseIA = chatCompletion.choices[0]?.message?.content.trim().toLowerCase();
+                
+                // 🛡️ SÉCURITÉ POST-GÉNÉRATION : Nettoyage des hallucinations de l'IA
+                reponseIA = reponseIA.replace(/^luneaa\s*:\s*/i, ''); // Supprime "luneaa: " si elle l'écrit quand même
+                reponseIA = reponseIA.replace(/^luneaa\s*/i, '');     // Supprime "luneaa " au début
                 if (reponseIA.endsWith('.')) reponseIA = reponseIA.slice(0, -1);
 
                 const safeResponse = reponseIA.length > 2000 ? reponseIA.substring(0, 1997) + "..." : reponseIA;
@@ -91,7 +93,7 @@ module.exports = {
             return; 
         }
 
-
+        // --- MODULE 2 : SYSTÈME DE SALON IMAGE (Smash or Pass) ---
         try {
             const settings = await client.prisma.guildSettings.findUnique({
                 where: { guildId: message.guild.id }
@@ -108,7 +110,6 @@ module.exports = {
                     message.react('✅'),
                     message.react('❌')
                 ]);
-                
                 
                 const currentAuthorName = message.member?.displayName || message.author.username;
                 const thread = await message.startThread({
