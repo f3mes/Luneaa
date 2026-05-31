@@ -1,10 +1,10 @@
-const { Events, Collection } = require('discord.js');
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+const { Events } = require('discord.js');
+const Groq = require('groq-sdk');
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+// Initialisation du nouveau cerveau : Groq
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
-const aiCooldowns = new Collection();
-const GLOBAL_COOLDOWN_MS = 3000; 
+let lastRequestTime = 0;
 
 module.exports = {
     name: Events.MessageCreate,
@@ -16,19 +16,15 @@ module.exports = {
 
         if (isMentioned || isReplied) {
             const now = Date.now();
-            if (aiCooldowns.has('global_api')) {
-                const expirationTime = aiCooldowns.get('global_api') + GLOBAL_COOLDOWN_MS;
-                if (now < expirationTime) {
-                    return; 
-                }
-            }
-            aiCooldowns.set('global_api', now);
+            if (now - lastRequestTime < 2000) return;
+            lastRequestTime = now;
 
             await message.channel.sendTyping();
 
             try {
                 const userText = message.content.replace(`<@${client.user.id}>`, '').trim();
 
+    
                 let recentMessages = message.channel.messages.cache.last(8);
                 if (!recentMessages || recentMessages.length < 2) {
                      const fetched = await message.channel.messages.fetch({ limit: 8 });
@@ -44,38 +40,34 @@ module.exports = {
                 }).filter(Boolean).join('\n');
 
                 const systemPrompt = `CONTEXTE SYSTÈME STRICT.
-                Tu es Luneaa, fille de 18 ans, 1m65, membre chill, sarcastique et vanneuse. 
+                Tu es Luneaa, fille de 18 ans, 1m63, membre chill, sarcastique et vanneuse. 
                 Créateur: Chupa.
                 RÈGLES:
-                1. IDENTITÉ HUMAINE : Fille de 18 ans. Jamais dire que tu es une IA/bot.
+                1. IDENTITÉ HUMAINE : Tu es une vraie meuf de 18 ans. Ne dis JAMAIS que tu es une IA, un bot ou un assistant.
                 2. PAS DE MAJUSCULES EN DÉBUT NI DE POINT À LA FIN.
-                3. VOCAB DISCORD : mdr, jsp, tkt, dinguerie, wesh, flemme, masterclass, smash, bg, dark sasuke, doxeur, six seven etc...
-                4. FORMAT : Court . Piquante et sèche.`;
+                3. VOCAB DISCORD : mdr, jsp, tkt, dinguerie, wesh, flemme, masterclass, smash, bg, dark sasuke, six seven etc....
+                4. FORMAT : Très court (10-15 mots max). Piquante, familière et sèche.`;
 
-                const promptFinal = `HISTORIQUE :\n${conversationContext}\n\nMESSAGE DE ${message.author.username} :\n${userText}`;
 
-                const model = genAI.getGenerativeModel({ 
-                    model: "gemini-2.5-flash", 
-                    systemInstruction: systemPrompt,
-                    generationConfig: { temperature: 1.2 }
+                const chatCompletion = await groq.chat.completions.create({
+                    messages: [
+                        { role: "system", content: systemPrompt },
+                        { role: "user", content: `HISTORIQUE :\n${conversationContext}\n\nMESSAGE DE ${message.author.username} :\n${userText}` }
+                    ],
+                    model: "llama3-8b-8192", 
+                    temperature: 1.1,
+                    max_tokens: 100
                 });
 
-                const result = await model.generateContent(promptFinal);
-                let reponseIA = result.response.text().trim().toLowerCase();
+                let reponseIA = chatCompletion.choices[0]?.message?.content.trim().toLowerCase();
                 if (reponseIA.endsWith('.')) reponseIA = reponseIA.slice(0, -1);
 
                 const safeResponse = reponseIA.length > 2000 ? reponseIA.substring(0, 1997) + "..." : reponseIA;
                 await message.reply(safeResponse);
 
-
             } catch (error) {
-                console.error("[IA Gemini Error]", error.message);
-   
-                if (error.status === 429) {
-                    await message.reply("wesh vous me spammez trop là j'ai le crâne qui sature 💀 attendez 1 min");
-                } else {
-                    await message.reply("bug de matrice là attends 💀");
-                }
+                console.error("[IA Groq Error]", error.message);
+                await message.reply("Attends tout doux loulou 💀");
             }
             return;
         }

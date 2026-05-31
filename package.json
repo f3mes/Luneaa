@@ -7,10 +7,10 @@
     "postinstall": "npx prisma generate && npx prisma db push"
   },
   "dependencies": {
-    "@google/generative-ai": "^0.24.1",
     "@prisma/client": "5.22.0",
     "discord.js": "^14.26.4",
     "dotenv": "^16.4.5",
+    "groq-sdk": "^0.9.1",
     "prisma": "5.22.0"
   }
 }
