@@ -4,7 +4,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node src/index.js",
-    "postinstall": "prisma generate && prisma db push"
+    "postinstall": "npx prisma generate && npx prisma db push"
   },
   "repository": {
     "type": "git",
@@ -22,9 +22,7 @@
     "@prisma/client": "^7.8.0",
     "@prisma/config": "^7.8.0",
     "discord.js": "^14.26.4",
-    "dotenv": "^17.4.2"
-  },
-  "devDependencies": {
+    "dotenv": "^17.4.2",
     "prisma": "^7.8.0"
   }
 }
