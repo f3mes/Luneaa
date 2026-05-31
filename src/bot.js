@@ -4,13 +4,8 @@ const { PrismaClient } = require('@prisma/client');
 const fs = require('fs');
 const path = require('path');
 
-const prisma = new PrismaClient({
-    datasources: {
-        db: {
-            url: process.env.DATABASE_URL || "file:./dev.db"
-        }
-    }
-});
+
+
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
@@ -19,6 +14,7 @@ const client = new Client({
         GatewayIntentBits.GuildMembers
     ]
 });
+
 
 client.commands = new Collection();
 client.prisma = prisma; 
@@ -36,11 +32,12 @@ if (fs.existsSync(commandsPath)) {
             if ('data' in command && 'execute' in command) {
                 client.commands.set(command.data.name, command);
             } else {
-                console.warn(`[Avertissement] La commande ${file} est mal formatée (manque 'data' ou 'execute').`);
+                console.warn(`[Architecture] ⚠️ La commande ${file} est mal formatée (manque 'data' ou 'execute').`);
             }
         }
     }
 }
+
 
 const eventsPath = path.join(__dirname, 'events');
 if (fs.existsSync(eventsPath)) {
@@ -56,5 +53,6 @@ if (fs.existsSync(eventsPath)) {
         }
     }
 }
+
 
 client.login(process.env.TOKEN);
