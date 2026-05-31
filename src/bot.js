@@ -5,12 +5,13 @@ const fs = require('fs');
 const path = require('path');
 
 
+const prisma = new PrismaClient();
 
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent, 
+        GatewayIntentBits.MessageContent,
         GatewayIntentBits.GuildMembers
     ]
 });
@@ -25,6 +26,8 @@ if (fs.existsSync(commandsPath)) {
 
     for (const folder of commandFolders) {
         const folderPath = path.join(commandsPath, folder);
+        if (!fs.lstatSync(folderPath).isDirectory()) continue;
+        
         const commandFiles = fs.readdirSync(folderPath).filter(file => file.endsWith('.js'));
         
         for (const file of commandFiles) {
@@ -32,7 +35,7 @@ if (fs.existsSync(commandsPath)) {
             if ('data' in command && 'execute' in command) {
                 client.commands.set(command.data.name, command);
             } else {
-                console.warn(`[Architecture] ⚠️ La commande ${file} est mal formatée (manque 'data' ou 'execute').`);
+                console.warn(`[Architecture] ⚠️ La commande ${file} est mal formatée.`);
             }
         }
     }
