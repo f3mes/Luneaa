@@ -23,7 +23,7 @@ module.exports = {
                 const systemPrompt = "Tu es Luneaa, un bot Discord sarcastique, intelligent et très utile. Tu as été créé par Chupa. Tes réponses doivent être relativement courtes (adaptées à du chat Discord), directes et en français.";
 
                 const model = genAI.getGenerativeModel({ 
-                    model: "gemini-1.5-flash",
+                    model: "gemini-2.5-flash",
                     systemInstruction: systemPrompt 
                 });
 
