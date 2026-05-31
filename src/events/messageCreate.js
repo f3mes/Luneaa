@@ -1,10 +1,17 @@
-const { Events } = require('discord.js');
+
+const { Events, Collection } = require('discord.js');
 const Groq = require('groq-sdk');
 
-// Initialisation du nouveau cerveau : Groq
+
+if (!process.env.GROQ_API_KEY) {
+    console.error("[ARCHITECTURE_FATAL] GROQ_API_KEY est manquante ou vide dans le fichier .env.");
+
+}
+
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
-let lastRequestTime = 0;
+const globalCooldowns = new Collection();
+const COOLDOWN_DURATION = 2000;
 
 module.exports = {
     name: Events.MessageCreate,
@@ -14,17 +21,21 @@ module.exports = {
         const isMentioned = message.mentions.has(client.user.id);
         const isReplied = message.type === 19 && message.mentions.repliedUser?.id === client.user.id;
 
+
         if (isMentioned || isReplied) {
+
             const now = Date.now();
-            if (now - lastRequestTime < 2000) return;
-            lastRequestTime = now;
+            if (globalCooldowns.has('ia_global') && (now - globalCooldowns.get('ia_global')) < COOLDOWN_DURATION) {
+                return; 
+            }
+            globalCooldowns.set('ia_global', now);
 
             await message.channel.sendTyping();
 
             try {
                 const userText = message.content.replace(`<@${client.user.id}>`, '').trim();
 
-    
+                
                 let recentMessages = message.channel.messages.cache.last(8);
                 if (!recentMessages || recentMessages.length < 2) {
                      const fetched = await message.channel.messages.fetch({ limit: 8 });
@@ -40,14 +51,13 @@ module.exports = {
                 }).filter(Boolean).join('\n');
 
                 const systemPrompt = `CONTEXTE SYSTÈME STRICT.
-                Tu es Luneaa, fille de 18 ans, 1m63, membre chill, sarcastique et vanneuse. 
+                Tu es Luneaa, fille de 18 ans, 1m65, membre chill, sarcastique et vanneuse. 
                 Créateur: Chupa.
                 RÈGLES:
-                1. IDENTITÉ HUMAINE : Tu es une vraie meuf de 18 ans. Ne dis JAMAIS que tu es une IA, un bot ou un assistant.
+                1. IDENTITÉ HUMAINE : Tu es une vraie meuf de 18 ans. Ne dis JAMAIS que tu es une IA/bot.
                 2. PAS DE MAJUSCULES EN DÉBUT NI DE POINT À LA FIN.
-                3. VOCAB DISCORD : mdr, jsp, tkt, dinguerie, wesh, flemme, masterclass, smash, bg, dark sasuke, six seven etc....
-                4. FORMAT : Très court (10-15 mots max). Piquante, familière et sèche.`;
-
+                3. VOCAB DISCORD : mdr, jsp, tkt, dinguerie, wesh, flemme, masterclass, smash, bg, dark sasuke, etc...
+                4. FORMAT : Court et efficace. Piquante, familière et sèche.`;
 
                 const chatCompletion = await groq.chat.completions.create({
                     messages: [
@@ -66,11 +76,12 @@ module.exports = {
                 await message.reply(safeResponse);
 
             } catch (error) {
-                console.error("[IA Groq Error]", error.message);
-                await message.reply("Attends tout doux loulou 💀");
+                console.error("[IA Module Error]", error.message);
+                await message.reply("bug de matrice là attends 💀");
             }
-            return;
+            return; 
         }
+
 
         try {
             const settings = await client.prisma.guildSettings.findUnique({
@@ -84,8 +95,11 @@ module.exports = {
             );
 
             if (isMedia) {
-                await message.react('✅');
-                await message.react('❌');
+                await Promise.all([
+                    message.react('✅'),
+                    message.react('❌')
+                ]);
+                
                 const thread = await message.startThread({
                     name: `Discussion - ${message.author.username}`,
                     autoArchiveDuration: 60
@@ -95,7 +109,7 @@ module.exports = {
                 await message.delete().catch(() => {});
             }
         } catch (error) {
-            console.error(`[MessageCreate] Erreur DB :`, error);
+            console.error(`[Module Image Error]`, error);
         }
     },
 };
