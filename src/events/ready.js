@@ -12,8 +12,12 @@ module.exports = {
             if (process.env.GUILD_ID) {
                 const guild = await client.guilds.fetch(process.env.GUILD_ID);
                 await guild.commands.set(commandsArray);
-                console.log(`✅ [API] ${commandsArray.length} commandes synchronisées instantanément sur : ${guild.name}.`);
+
+                await client.application.commands.set([]); 
+                
+                console.log(`✅ [API] ${commandsArray.length} commandes synchronisées sur : ${guild.name} (Doublons globaux purgés).`);
             } else {
+
                 await client.application.commands.set(commandsArray);
                 console.log(`✅ [API] ${commandsArray.length} commandes synchronisées (Global).`);
             }
