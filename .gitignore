@@ -1,2 +1,13 @@
+# Dependance Node.js
+
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Variables d'environnement ( secu )
 .env
-__pycache__/
+
+# DB
+
+prisma/*.db
+prisma/*.db-journal

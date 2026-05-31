@@ -1,0 +1,34 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model GuildSettings {
+  guildId String @id 
+  imageChannelId String?
+  logChannelId String?
+}
+
+model Warn {
+  id Int @id @default(autoincrement())
+  userId String
+  guildId String
+  reason String
+  createdAt DateTime @default(now())
+}
+
+model ActiveSanction {
+  id Int @id @default(autoincrement())
+  userId String
+  guildId String
+  type String 
+  expiresAt DateTime
+}

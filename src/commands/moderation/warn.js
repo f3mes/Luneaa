@@ -29,9 +29,9 @@ module.exports = {
         const embed = new EmbedBuilder()
             .setColor('Yellow')
             .setTitle('Nouvel Avertissement')
-            .setDescription('<@${target.id}> a été averti. \n**Raison:** ${reason}')
-            .setFooter({ text: 'Sanction appliqué par ${interaction.user.tag}'});
+            .setDescription(`<@${member.id}> a été averti.\n**Raison:** ${reason}`)
+            .setFooter({ text: `Sanction appliquée par ${interaction.user.tag}` });
 
-        await interaction.reply({ embeds: [embed]});
+        await interaction.reply({ embeds: [embed] });
     },
 };

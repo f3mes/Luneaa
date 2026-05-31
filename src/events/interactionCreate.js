@@ -1,21 +1,21 @@
-const { Event, EmbedBuilder } = require('discord.js')
+const { Events, EmbedBuilder } = require('discord.js');
 
 module.exports = {
     name: Events.InteractionCreate,
     async execute(interaction, client){
-        if (!interaction.isChatInputCommand()) return ;
+        if (!interaction.isChatInputCommand()) return;
 
-        const command = client.commands.get(interaction.commandName) ;
+        const command = client.commands.get(interaction.commandName);
 
         if (!command) {
-            console.error('[Alerte Routeur] Commande inconnue : ${interaction.commandName}');
+            console.error(`[Alerte Routeur] Commande inconnue : ${interaction.commandName}`);
             return;
         }
 
         try {
             await command.execute(interaction, client);
         } catch (error) {
-            console.error('[Erreur] Echec de la commande ${interaction.commandName} :', error)
+            console.error(`[Erreur] Echec de la commande ${interaction.commandName} :`, error);
 
             const errorEmbed = new EmbedBuilder()
                 .setColor('Red')
