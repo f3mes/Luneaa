@@ -1,14 +1,13 @@
-
 const { Events, Collection } = require('discord.js');
 const Groq = require('groq-sdk');
 
 
 if (!process.env.GROQ_API_KEY) {
-    console.error("[ARCHITECTURE_FATAL] GROQ_API_KEY est manquante ou vide dans le fichier .env.");
-
+    console.error("[ARCHITECTURE_FATAL] GROQ_API_KEY manquante ou vide dans le fichier .env.");
 }
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+
 
 const globalCooldowns = new Collection();
 const COOLDOWN_DURATION = 2000;
@@ -23,7 +22,6 @@ module.exports = {
 
 
         if (isMentioned || isReplied) {
-
             const now = Date.now();
             if (globalCooldowns.has('ia_global') && (now - globalCooldowns.get('ia_global')) < COOLDOWN_DURATION) {
                 return; 
@@ -35,7 +33,6 @@ module.exports = {
             try {
                 const userText = message.content.replace(`<@${client.user.id}>`, '').trim();
 
-                
                 let recentMessages = message.channel.messages.cache.last(8);
                 if (!recentMessages || recentMessages.length < 2) {
                      const fetched = await message.channel.messages.fetch({ limit: 8 });
@@ -45,8 +42,11 @@ module.exports = {
                 const conversationContext = recentMessages.map(msg => {
                     if (msg.id === message.id) return null;
                     if (msg.author.bot && msg.author.id !== client.user.id) return null;
-                    const authorName = msg.author.id === client.user.id ? 'Luneaa' : msg.author.username;
+                    
+                    
+                    const authorName = msg.author.id === client.user.id ? 'Luneaa' : (msg.member?.displayName || msg.author.globalName || msg.author.username);
                     const cleanText = msg.content.replace(`<@${client.user.id}>`, '').trim();
+                    
                     return cleanText ? `${authorName}: ${cleanText}` : null;
                 }).filter(Boolean).join('\n');
 
@@ -56,9 +56,9 @@ module.exports = {
                 
                 RÈGLES ABSOLUES :
                 1. IDENTITÉ : Tu es humaine. Ne dis JAMAIS que tu es une IA, un bot ou un assistant.
-                2. FRANÇAIS NATUREL : Ne fais JAMAIS de traductions bizarres de l'anglais. Utilise le vocabulaire correctement (ex: on dit "c'est une dinguerie", on ne dit PAS "tu deviens dinguerie"). 
+                2. FRANÇAIS NATUREL : Ne fais JAMAIS de traductions bizarres de l'anglais.
                 3. FORMAT DISCORD : Pas de majuscule en début de phrase. Pas de point à la fin.
-                4. STYLE : Court et efficace. Piquante, familière, sèche mais réaliste (mdr, jsp, tkt, de ouf, flemme, masterclass, smash, bg, wesh, dark sasuke etc..).
+                4. STYLE : Court. Piquante, familière, sèche mais réaliste (mdr, jsp, tkt, de ouf, flemme, masterclass, smash, bg, wesh, dark sasuke).
                 
                 EXEMPLES DE RÉPONSES :
                 - "mdr tkt je gère"
@@ -66,10 +66,12 @@ module.exports = {
                 - "flemme de rep à ça vrm"
                 - "c'est une dinguerie comment tu parles"`;
 
+                const currentAuthorName = message.member?.displayName || message.author.globalName || message.author.username;
+
                 const chatCompletion = await groq.chat.completions.create({
                     messages: [
                         { role: "system", content: systemPrompt },
-                        { role: "user", content: `HISTORIQUE :\n${conversationContext}\n\nMESSAGE DE ${message.author.username} :\n${userText}` }
+                        { role: "user", content: `HISTORIQUE :\n${conversationContext}\n\nMESSAGE DE ${currentAuthorName} :\n${userText}` }
                     ],
                     model: "llama-3.1-8b-instant", 
                     temperature: 0.85, 
@@ -84,7 +86,7 @@ module.exports = {
 
             } catch (error) {
                 console.error("[IA Module Error]", error.message);
-                await message.reply("Euhh tout doux loulou j'arrive pas à suivre la... 💀");
+                await message.reply("bug de matrice là attends 💀");
             }
             return; 
         }
@@ -107,8 +109,10 @@ module.exports = {
                     message.react('❌')
                 ]);
                 
+                
+                const currentAuthorName = message.member?.displayName || message.author.username;
                 const thread = await message.startThread({
-                    name: `Discussion - ${message.author.username}`,
+                    name: `Discussion - ${currentAuthorName}`,
                     autoArchiveDuration: 60
                 });
                 await thread.send('Discussion ouverte sur ce contenu.');
