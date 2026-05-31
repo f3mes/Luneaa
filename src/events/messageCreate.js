@@ -64,7 +64,7 @@ module.exports = {
                         { role: "system", content: systemPrompt },
                         { role: "user", content: `HISTORIQUE :\n${conversationContext}\n\nMESSAGE DE ${message.author.username} :\n${userText}` }
                     ],
-                    model: "llama3-8b-8192", 
+                    model: "llama-3.1-8b-instant",
                     temperature: 1.1,
                     max_tokens: 100
                 });
@@ -77,7 +77,7 @@ module.exports = {
 
             } catch (error) {
                 console.error("[IA Module Error]", error.message);
-                await message.reply("bug de matrice là attends 💀");
+                await message.reply("Euhh tout doux loulou j'arrive pas à suivre la... 💀");
             }
             return; 
         }
