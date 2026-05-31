@@ -7,16 +7,23 @@ module.exports = {
         console.log(`✅ [Réseau] Bot connecté en tant que ${client.user.tag}`);
         
         const commandsArray = Array.from(client.commands.values()).map(c => c.data.toJSON());
+        
         try {
-            await client.application.commands.set(commandsArray);
-            console.log(`✅ [API] ${commandsArray.length} Slash Commands synchronisées avec Discord.`);
+            if (process.env.GUILD_ID) {
+                const guild = await client.guilds.fetch(process.env.GUILD_ID);
+                await guild.commands.set(commandsArray);
+                console.log(`✅ [API] ${commandsArray.length} commandes synchronisées instantanément sur : ${guild.name}.`);
+            } else {
+                await client.application.commands.set(commandsArray);
+                console.log(`✅ [API] ${commandsArray.length} commandes synchronisées (Global).`);
+            }
         } catch (error) {
             console.error(`❌ [API] Erreur de synchronisation des commandes :`, error);
         }
 
+
         setInterval(async () => {
             const now = new Date();
-            
             const expiredSanctions = await client.prisma.activeSanction.findMany({
                 where: { expiresAt: { lte: now } }
             });
