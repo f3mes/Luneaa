@@ -1,10 +1,16 @@
+require('dotenv').config();
 const { Client, GatewayIntentBits, Collection } = require('discord.js');
 const { PrismaClient } = require('@prisma/client');
 const fs = require('fs');
 const path = require('path');
 
-const prisma = new PrismaClient();
-
+const prisma = new PrismaClient({
+    datasources: {
+        db: {
+            url: process.env.DATABASE_URL || "file:./dev.db"
+        }
+    }
+});
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
