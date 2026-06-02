@@ -8,4 +8,10 @@ export default defineConfig({
     vue(),
     tailwindcss(),
   ],
+  server: {
+    proxy: {
+      '/api': 'http://45.43.163.139:25685',
+      '/auth': 'http://45.43.163.139:25685'
+    }
+  }
 })

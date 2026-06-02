@@ -117,7 +117,7 @@ app.get('/auth/discord/callback', passport.authenticate('discord', { failureRedi
             `);
         }
 
-        res.redirect('http://localhost:5173');
+        res.redirect('/');
     } catch (error) {
         console.error('[Web Error]', error);
         res.send("Une erreur serveur est survenue.");
@@ -132,6 +132,64 @@ app.get('/api/user', (req, res) => {
         username: req.user.username,
         avatar: `https://cdn.discordapp.com/avatars/${req.user.id}/${req.user.avatar}.png`
     });
+});
+
+let statsCache = null;
+let lastStatsFetch = 0;
+
+app.get('/api/stats', async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ error: "Non autorisé" });
+
+    const now = Date.now();
+    if (statsCache && (now - lastStatsFetch < 60000)) {
+        return res.json(statsCache);
+    }
+
+    try {
+        const guildsPromise = client.shard.fetchClientValues('guilds.cache.size');
+        const membersPromise = client.shard.broadcastEval(c => c.guilds.cache.reduce((acc, guild) => acc + guild.memberCount, 0));
+        
+        const [guilds, members] = await Promise.all([guildsPromise, membersPromise]);
+
+        const totalGuilds = guilds.reduce((acc, guildCount) => acc + guildCount, 0);
+        const totalMembers = members.reduce((acc, memberCount) => acc + memberCount, 0);
+        const ping = client.ws.ping; 
+
+        statsCache = {
+            servers: totalGuilds,
+            users: totalMembers,
+            latency: ping
+        };
+        lastStatsFetch = now;
+
+        res.json(statsCache);
+    } catch (error) {
+        console.error('[API Stats Error]', error);
+        res.status(500).json({ error: "Erreur d'agrégation des Shards" });
+    }
+});
+app.post('/api/settings/:guildId', async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ error: "Non autorisé" });
+    const settings = await prisma.guildSettings.upsert({
+        where: { guildId: req.params.guildId },
+        update: req.body,
+        create: { guildId: req.params.guildId, ...req.body }
+    });
+    res.json(settings);
+});
+
+app.get('/api/analytics', async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ error: "Non autorisé" });
+
+    const stats = {
+        labels: ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'],
+        commands: [120, 190, 300, 500, 200, 300, 450],
+        logs: [
+            { id: 1, action: 'Ban', user: 'Chupa', time: '10:20' },
+            { id: 2, action: 'Kick', user: 'BotTest', time: '09:45' }
+        ]
+    };
+    res.json(stats);
 });
 
 app.get('/logout', (req, res) => {

@@ -16,6 +16,8 @@ model GuildSettings {
   guildId String @id 
   imageChannelId String?
   logChannelId String?
+  welcomeMessage String?
+  premium        Boolean  @default(false)
 }
 
 model Warn {
