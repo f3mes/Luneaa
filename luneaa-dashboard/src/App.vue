@@ -7,7 +7,7 @@ const user = ref(null)
 onMounted(async () => {
   try {
     const response = await fetch('http://45.43.163.139:25685/api/user', {
-      credentials: 'omit' 
+      credentials: 'include' 
     })
     
     if (response.ok) {
