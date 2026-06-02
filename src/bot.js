@@ -102,11 +102,13 @@ app.get('/auth/discord/callback', passport.authenticate('discord', { failureRedi
         const hasAccess = await prisma.dashboardAccess.findUnique({ where: { userId: userId } });
 
         if (!hasAccess && !owners.includes(userId)) {
+            const pseudo = req.user.username;
+            
             req.logout(() => {}); 
             return res.send(`
                 <div style="background-color: #1e1f22; color: white; text-align: center; height: 100vh; padding-top: 100px; font-family: sans-serif; margin: -8px;">
                     <h1 style="color: #ed4245;">⛔ Accès Refusé</h1>
-                    <p style="color: #b5bac1;">Ton compte <b>${req.user.username}</b> n'est pas autorisé par l'Architecte.</p>
+                    <p style="color: #b5bac1;">Ton compte <b>${pseudo}</b> n'est pas autorisé par l'Architecte.</p>
                     <a href="/" style="color: #5865F2; text-decoration: none; padding-top: 20px; display: inline-block;">Retour à l'accueil</a>
                 </div>
             `);
