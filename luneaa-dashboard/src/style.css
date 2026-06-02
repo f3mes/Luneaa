@@ -1,0 +1,12 @@
+@import "tailwindcss";
+
+@theme {
+  --color-discord: #5865F2;
+  --color-dark: #1e1f22;
+  --color-darker: #2b2d31;
+}
+
+body {
+  background-color: var(--color-dark);
+  color: white;
+}

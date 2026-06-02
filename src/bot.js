@@ -55,7 +55,10 @@ if (fs.existsSync(eventsPath)) {
 }
 
 const app = express();
-app.use(cors());
+app.use(cors({
+    origin: 'http://localhost:5173', // Autorise ton site Vue local
+    credentials: true 
+}));
 
 app.use(session({
     secret: process.env.SESSION_SECRET || 'fallback_secret',
@@ -114,25 +117,21 @@ app.get('/auth/discord/callback', passport.authenticate('discord', { failureRedi
             `);
         }
 
-        res.redirect('/dashboard');
+        res.redirect('http://localhost:5173');
     } catch (error) {
         console.error('[Web Error]', error);
         res.send("Une erreur serveur est survenue.");
     }
 });
 
-app.get('/dashboard', (req, res) => {
-    if (!req.isAuthenticated()) return res.redirect('/'); 
+app.get('/api/user', (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ error: "Non connecté" });
     
-    res.send(`
-        <div style="background-color: #2b2d31; color: white; font-family: sans-serif; height: 100vh; padding: 50px; margin: -8px;">
-            <h1 style="color: #57F287;">Connecté avec succès ! 🎉</h1>
-            <h2>Bienvenue, boss : ${req.user.username}</h2>
-            <p>L'authentification OAuth2 fonctionne parfaitement. Ton système Prisma t'a reconnu et a déverrouillé les portes.</p>
-            <br>
-            <a href="/logout" style="color: #ed4245; text-decoration: none; font-weight: bold;">Se déconnecter</a>
-        </div>
-    `);
+    res.json({
+        id: req.user.id,
+        username: req.user.username,
+        avatar: `https://cdn.discordapp.com/avatars/${req.user.id}/${req.user.avatar}.png`
+    });
 });
 
 app.get('/logout', (req, res) => {
