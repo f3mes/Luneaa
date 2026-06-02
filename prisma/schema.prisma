@@ -33,3 +33,9 @@ model ActiveSanction {
   type String 
   expiresAt DateTime
 }
+
+model DashboardAccess {
+  userId    String   @id
+  addedBy   String
+  addedAt   DateTime @default(now())
+}
