@@ -1,7 +1,7 @@
 const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
 
 // Liste des Architectes (Ton ID et celui de ton collègue)
-const OWNERS = ['1132930851508846622', '1074743247768920176']; 
+const OWNERS = ['1132930851508846622', '1074743247768920176', '1225988503041478696']; 
 
 module.exports = {
     data: new SlashCommandBuilder()
