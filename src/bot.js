@@ -65,8 +65,8 @@ app.get('/', (req, res) => {
 });
 
 
-const webPort = process.env.WEB_PORT || 3000;
-app.listen(webPort, () => {
+const webPort = process.env.WEB_PORT || 25685;
+app.listen(webPort, '0.0.0.0', () => {
     console.log(`🌐 [Web] Interface d'administration en ligne sur le port ${webPort}`);
 });
 
