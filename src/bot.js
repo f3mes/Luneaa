@@ -199,15 +199,27 @@ app.get('/api/network', async (req, res) => {
     if (!req.isAuthenticated()) return res.status(401).json({ error: "Non autorisé" });
 
     try {
-        const nodes = [{ id: 'Bot', group: 1, name: client.user.username, val: 50 }];
+        const nodes = [{ 
+            id: 'Bot', 
+            group: 1, 
+            name: client.user.username, 
+            val: 50,
+            fx: 0, fy: 0, fz: 0 
+        }];
         const links = [];
 
         client.guilds.cache.forEach(guild => {
             nodes.push({ 
                 id: guild.id, 
                 group: 2, 
-                name: `${guild.name} (${guild.memberCount} membres)`, 
-                val: Math.max(5, Math.min(30, guild.memberCount / 2)) 
+                name: guild.name, 
+                val: Math.max(5, Math.min(30, guild.memberCount / 2)),
+                details: {
+                    members: guild.memberCount,
+                    channels: guild.channels.cache.size,
+                    roles: guild.roles.cache.size,
+                    boosts: guild.premiumSubscriptionCount || 0
+                }
             });
             
             links.push({ source: 'Bot', target: guild.id });
