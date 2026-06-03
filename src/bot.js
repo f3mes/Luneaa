@@ -204,38 +204,30 @@ app.get('/api/analytics', async (req, res) => {
 app.get('/api/network/:guildId', async (req, res) => {
     if (!req.isAuthenticated()) return res.status(401).json({ error: "Non autorisé" });
     
-    const guildId = req.params.guildId;
+    try {
+        const guildId = req.params.guildId;
+        const guild = client.guilds.cache.get(guildId);
+        if (!guild) return res.status(404).json({ error: "Serveur introuvable" });
 
-    const warnCount = await client.prisma.warn.count({ where: { guildId } });
-    const settings = await client.prisma.guildSettings.findUnique({ where: { guildId } });
+        const warnCount = await client.prisma.warn.count({ where: { guildId } });
+        const settings = await client.prisma.guildSettings.findUnique({ where: { guildId } });
 
-    const nodes = [
-        { id: 'Center', group: 2, name: 'Serveur', val: 30, fx: 0, fy: 0, fz: 0 },
-        { id: 'Warns', group: 4, name: '⚠️ Warns', val: 15, details: { rows: warnCount, type: 'Table Prisma' }},
-        { id: 'Config', group: 3, name: '⚙️ Config', val: 15, details: { rows: settings ? 1 : 0, type: 'Table Prisma' }}
-    ];
-    
-    const links = [{ source: 'Center', target: 'Warns' }, { source: 'Center', target: 'Config' }];
-    
-    res.json({ nodes, links });
-});
-
-app.get('/api/network/:guildId', async (req, res) => {
-    if (!req.isAuthenticated()) return res.status(401).json({ error: "Non autorisé" });
-    const guild = client.guilds.cache.get(req.params.guildId);
-    if (!guild) return res.status(404).json({ error: "Serveur introuvable" });
-
-    const nodes = [{ id: 'Center', group: 2, name: guild.name, val: 30, fx: 0, fy: 0, fz: 0 }];
-    const tables = [
-        { id: 'Config', group: 3, name: '⚙️ Config', rows: 1 },
-        { id: 'Warns', group: 4, name: '⚠️ Warns', rows: 14 }
-    ];
-    const links = [];
-    tables.forEach(table => {
-        nodes.push({ id: table.id, group: table.group, name: table.name, val: 15, details: { rows: table.rows, type: 'Table Prisma' }});
-        links.push({ source: 'Center', target: table.id });
-    });
-    res.json({ nodes, links });
+        const nodes = [
+            { id: 'Center', group: 2, name: guild.name, val: 30, fx: 0, fy: 0, fz: 0 },
+            { id: 'Warns', group: 4, name: '⚠️ Warns', val: 15, details: { rows: warnCount, type: 'Table Prisma' }},
+            { id: 'Config', group: 3, name: '⚙️ Config', val: 15, details: { rows: settings ? 1 : 0, type: 'Table Prisma' }}
+        ];
+        
+        const links = [
+            { source: 'Center', target: 'Warns' }, 
+            { source: 'Center', target: 'Config' }
+        ];
+        
+        res.json({ nodes, links });
+    } catch (error) {
+        console.error('[API Network Error]', error);
+        res.status(500).json({ error: "Erreur serveur" });
+    }
 });
 
 app.get('/logout', (req, res) => {

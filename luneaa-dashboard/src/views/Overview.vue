@@ -49,15 +49,15 @@ onMounted(() => {
       .linkWidth(1)
       .linkColor(() => 'rgba(255,255,255,0.1)')
       .onNodeClick(node => {
-        if (currentView.value === 'galaxy' && node.id !== 'Bot') {
-          graph.cameraPosition({ x: node.x, y: node.y, z: node.z - 50 }, node, 1500);
-          setTimeout(() => loadUniverse('system', node.id), 1500);
-        }
-        else if (currentView.value === 'system' && node.id !== 'Center') {
-          graph.cameraPosition({ x: node.x * 1.5, y: node.y * 1.5, z: node.z * 1.5 }, node, 1000);
-          selectedNode.value = node;
-        }
-      });
+  if (currentView.value === 'galaxy' && node.id !== 'Bot') {
+    graph.cameraPosition({ x: node.x, y: node.y, z: node.z - 50 }, node, 1000);
+    setTimeout(() => loadUniverse('system', node.id), 1000);
+  }
+  else if (currentView.value === 'system' && node.id !== 'Center') {
+    graph.cameraPosition({ x: node.x * 1.5, y: node.y * 1.5, z: node.z * 1.5 }, node, 1000);
+    selectedNode.value = node;
+  }
+})
       
       graph.d3Force('charge').strength(-150);
       graph.d3Force('link').distance(60);
