@@ -3,6 +3,8 @@ const { Client, GatewayIntentBits, Collection } = require('discord.js');
 const { PrismaClient } = require('@prisma/client');
 const fs = require('fs');
 const path = require('path');
+const http = require('http');
+const { Server } = require('socket.io');
 
 const express = require('express');
 const cors = require('cors');
@@ -56,7 +58,7 @@ if (fs.existsSync(eventsPath)) {
 
 const app = express();
 app.use(cors({
-    origin: 'http://localhost:5173', // Autorise ton site Vue local
+    origin: 'http://localhost:5173', 
     credentials: true 
 }));
 
