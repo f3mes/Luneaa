@@ -55,7 +55,7 @@ const loginWithDiscord = () => {
         <aside class="bg-darker p-6 rounded-xl border border-gray-800 flex flex-col gap-2 md:col-span-1">
           <h3 class="text-gray-400 uppercase text-xs font-bold tracking-wider mb-2 ml-2">Menu Principal</h3>
           <router-link to="/" class="py-2 px-4 rounded font-medium transition" active-class="bg-discord text-white" exact-active-class="bg-discord text-white" :class="[$route.path === '/' ? '' : 'text-gray-400 hover:bg-dark hover:text-white']">📊 Vue d'ensemble</router-link>
-          <router-link to="/settings" class="py-2 px-4 rounded font-medium transition" active-class="bg-discord text-white" :class="[$route.path === '/settings' ? '' : 'text-gray-400 hover:bg-dark hover:text-white']">⚙️ Paramètres</router-link>
+          <router-link to="/terminal" class="py-2 px-4 rounded font-medium transition" active-class="bg-discord text-white" :class="[$route.path === '/terminal' ? '' : 'text-gray-400 hover:bg-dark hover:text-white']">💻 Console Live</router-link>
           <router-link to="/moderation" class="py-2 px-4 rounded font-medium transition" active-class="bg-discord text-white" :class="[$route.path === '/moderation' ? '' : 'text-gray-400 hover:bg-dark hover:text-white']">🛡️ Modération</router-link>
         </aside>
 

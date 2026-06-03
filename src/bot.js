@@ -199,8 +199,46 @@ app.get('/logout', (req, res) => {
 });
 
 const webPort = process.env.WEB_PORT || 25685;
-app.listen(webPort, '0.0.0.0', () => {
-    console.log(`🌐 [Web] Interface d'administration sécurisée en ligne sur le port ${webPort}`);
+const server = http.createServer(app); 
+const io = new Server(server, {
+    cors: {
+        origin: "http://localhost:5173",
+        methods: ["GET", "POST"],
+        credentials: true
+    }
 });
+
+
+const originalLog = console.log;
+const originalError = console.error;
+
+console.log = function(...args) {
+    originalLog.apply(console, args); 
+    io.emit('terminal-log', { type: 'log', message: args.join(' ') });
+};
+
+console.error = function(...args) {
+    originalError.apply(console, args);
+    io.emit('terminal-log', { type: 'error', message: args.join(' ') });
+};
+
+
+io.on('connection', (socket) => {
+    socket.emit('terminal-log', { type: 'log', message: '🟢 Connexion au tunnel WebSocket établie avec succès.' });
+
+
+    socket.on('restart-bot', () => {
+        console.log("🔴 [SYSTEM] Ordre de redémarrage reçu depuis le Dashboard ! Extinction...");
+        setTimeout(() => {
+            process.exit(0); 
+        }, 1500);
+    });
+});
+
+
+server.listen(webPort, '0.0.0.0', () => {
+    console.log(`🌐 [Web] Interface et Tunnel WebSocket ouverts sur le port ${webPort}`);
+});
+
 
 client.login(process.env.TOKEN);
