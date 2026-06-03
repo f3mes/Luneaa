@@ -7,25 +7,29 @@ const terminalBox = ref(null)
 const isConnected = ref(false)
 let socket = null
 
+const getTime = () => new Date().toLocaleTimeString()
+
 onMounted(() => {
   socket = io({ path: '/socket.io' }) 
 
   socket.on('connect', () => {
     isConnected.value = true
-    logs.value.push({ type: 'log', message: '🔌 [FRONT-END] Connecté au tunnel avec succès !' })
+    logs.value.push({ type: 'log', message: '🔌 [FRONT-END] Connecté au tunnel avec succès !', time: getTime() })
   })
 
   socket.on('connect_error', (err) => {
-    logs.value.push({ type: 'error', message: `⚠️ [ERREUR RÉSEAU] Impossible de joindre le bot : ${err.message}` })
+    logs.value.push({ type: 'error', message: `⚠️ [ERREUR RÉSEAU] Impossible de joindre le bot : ${err.message}`, time: getTime() })
   })
 
   socket.on('disconnect', () => {
     isConnected.value = false
-    logs.value.push({ type: 'error', message: '❌ [FRONT-END] Déconnecté du serveur.' })
+    logs.value.push({ type: 'error', message: '❌ [FRONT-END] Déconnecté du serveur.', time: getTime() })
   })
 
   socket.on('terminal-log', async (data) => {
+    data.time = getTime()
     logs.value.push(data)
+    
     if (logs.value.length > 100) logs.value.shift()
     await nextTick()
     if (terminalBox.value) terminalBox.value.scrollTop = terminalBox.value.scrollHeight
@@ -61,7 +65,7 @@ const restartBot = () => {
 
     <div ref="terminalBox" class="bg-[#0c0c0c] border border-gray-800 rounded-xl p-4 flex-grow overflow-y-auto font-mono text-sm shadow-inner min-h-[500px]">
       <div v-for="(log, index) in logs" :key="index" class="mb-1 leading-relaxed" :class="log.type === 'error' ? 'text-red-500' : 'text-[#4af626]'">
-        <span class="text-gray-600 select-none">[{{ new Date().toLocaleTimeString() }}]</span>
+        <span class="text-gray-600 select-none">[{{ log.time }}]</span>
         <span class="ml-3 break-words">{{ log.message }}</span>
       </div>
     </div>
