@@ -22,28 +22,33 @@ module.exports = {
             });
         }
 
-        await interaction.guild.members.ban(target.id, { reason: reason });
-
-        const embed = new EmbedBuilder()
-            .setColor('Red')
-            .setTitle('🔨 Membre Banni')
-            .setDescription(`<@${target.id}> (${target.tag}) a été banni.\n**Raison:** ${reason}`);
-
-        if (duration) {
-            const expiresAt = new Date(Date.now() + duration * 60000);
-            await client.prisma.activeSanction.create({
-                data: {
-                    userId: target.id,
-                    guildId: interaction.guild.id,
-                    type: 'BAN',
-                    expiresAt: expiresAt
-                }
-            });
-            embed.addFields({ name: 'Durée', value: `${duration} minute(s)` });
-        } else {
-            embed.addFields({ name: 'Durée', value: 'Définitif' });
+        try {
+            await interaction.guild.members.ban(target.id, { reason: reason });
+    
+            const embed = new EmbedBuilder()
+                .setColor('Red')
+                .setTitle('🔨 Membre Banni')
+                .setDescription(`<@${target.id}> (${target.tag}) a été banni.\n**Raison:** ${reason}`);
+    
+            if (duration) {
+                const expiresAt = new Date(Date.now() + duration * 60000);
+                await client.prisma.activeSanction.create({
+                    data: {
+                        userId: target.id,
+                        guildId: interaction.guild.id,
+                        type: 'BAN',
+                        expiresAt: expiresAt
+                    }
+                });
+                embed.addFields({ name: 'Durée', value: `${duration} minute(s)` });
+            } else {
+                embed.addFields({ name: 'Durée', value: 'Définitif' });
+            }
+    
+            await interaction.reply({ embeds: [embed] });
+        } catch (error) {
+            console.error('[Ban Error]', error);
+            await interaction.reply({ content: '❌ Impossible d\'appliquer le bannissement. L\'API Discord ou la base de données a rencontré une erreur.', ephemeral: true });
         }
-
-        await interaction.reply({ embeds: [embed] });
     },
 };

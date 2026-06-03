@@ -24,6 +24,7 @@ module.exports = {
 
             await interaction.reply({ embeds: [embed] });
         } catch (error) {
+            console.error('[Unban Error]', error);
             await interaction.reply({ content: '❌ Impossible de débannir. L\'ID est invalide ou cet utilisateur n\'est pas banni.', ephemeral: true });
         }
     },

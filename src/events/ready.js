@@ -27,28 +27,32 @@ module.exports = {
 
 
         setInterval(async () => {
-            const now = new Date();
-            const expiredSanctions = await client.prisma.activeSanction.findMany({
-                where: { expiresAt: { lte: now } }
-            });
-
-            for (const sanction of expiredSanctions) {
-                try {
-                    const guild = client.guilds.cache.get(sanction.guildId);
-                    if (!guild) continue;
-
-                    if (sanction.type === 'BAN') {
-                        await guild.members.unban(sanction.userId, 'Temps de ban expiré automatiquement.');
-                    } else if (sanction.type === 'MUTE') {
-                        const member = await guild.members.fetch(sanction.userId).catch(() => null);
-                        if (member) await member.timeout(null, 'Temps de mute expiré automatiquement.');
+            try {
+                const now = new Date();
+                const expiredSanctions = await client.prisma.activeSanction.findMany({
+                    where: { expiresAt: { lte: now } }
+                });
+    
+                for (const sanction of expiredSanctions) {
+                    try {
+                        const guild = client.guilds.cache.get(sanction.guildId);
+                        if (!guild) continue;
+    
+                        if (sanction.type === 'BAN') {
+                            await guild.members.unban(sanction.userId, 'Temps de ban expiré automatiquement.');
+                        } else if (sanction.type === 'MUTE') {
+                            const member = await guild.members.fetch(sanction.userId).catch(() => null);
+                            if (member) await member.timeout(null, 'Temps de mute expiré automatiquement.');
+                        }
+    
+                        await client.prisma.activeSanction.delete({ where: { id: sanction.id } });
+                        console.log(`[Sanctions] ${sanction.type} levé pour l'utilisateur ${sanction.userId}`);
+                    } catch (error) {
+                        console.error(`[Erreur Sanction] ID ${sanction.id}:`, error);
                     }
-
-                    await client.prisma.activeSanction.delete({ where: { id: sanction.id } });
-                    console.log(`[Sanctions] ${sanction.type} levé pour l'utilisateur ${sanction.userId}`);
-                } catch (error) {
-                    console.error(`[Erreur Sanction] ID ${sanction.id}:`, error);
                 }
+            } catch (error) {
+                console.error('[Interval Sanctions Error]', error);
             }
         }, 60000);
     },

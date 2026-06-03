@@ -10,13 +10,18 @@ module.exports = {
     async execute(interaction, client) {
         const target = interaction.options.getUser('cible');
 
-        const result = await client.prisma.warn.deleteMany({
-            where: {
-                userId: target.id,
-                guildId: interaction.guild.id
-            }
-        });
-
-        await interaction.reply({ content: `🗑️ **${result.count}** avertissement(s) supprimé(s) pour <@${target.id}>.` });
+        try {
+            const result = await client.prisma.warn.deleteMany({
+                where: {
+                    userId: target.id,
+                    guildId: interaction.guild.id
+                }
+            });
+    
+            await interaction.reply({ content: `🗑️ **${result.count}** avertissement(s) supprimé(s) pour <@${target.id}>.` });
+        } catch (error) {
+            console.error('[ClearWarns Error]', error);
+            await interaction.reply({ content: '❌ Une erreur est survenue lors de la suppression des avertissements.', ephemeral: true });
+        }
     },
 };

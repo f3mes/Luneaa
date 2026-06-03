@@ -25,17 +25,22 @@ module.exports = {
         if (subcommand === 'add') {
             const target = interaction.options.getUser('cible');
 
-            const existing = await client.prisma.dashboardAccess.findUnique({ where: { userId: target.id } });
-            if (existing) return interaction.reply({ content: `⚠️ ${target} a déjà accès au Dashboard.`, flags: 64 });
-
-            await client.prisma.dashboardAccess.create({
-                data: {
-                    userId: target.id,
-                    addedBy: interaction.user.id
-                }
-            });
-
-            await interaction.reply({ content: `✅ **Accès accordé** : ${target} peut désormais se connecter au Dashboard Web.`, flags: 64 });
+            try {
+                const existing = await client.prisma.dashboardAccess.findUnique({ where: { userId: target.id } });
+                if (existing) return interaction.reply({ content: `⚠️ ${target} a déjà accès au Dashboard.`, flags: 64 });
+    
+                await client.prisma.dashboardAccess.create({
+                    data: {
+                        userId: target.id,
+                        addedBy: interaction.user.id
+                    }
+                });
+    
+                await interaction.reply({ content: `✅ **Accès accordé** : ${target} peut désormais se connecter au Dashboard Web.`, flags: 64 });
+            } catch (error) {
+                console.error('[Dashboard Add Error]', error);
+                await interaction.reply({ content: `❌ Erreur lors de l'attribution de l'accès.`, flags: 64 });
+            }
         }
 
         if (subcommand === 'remove') {
@@ -55,22 +60,27 @@ module.exports = {
 
 
         if (subcommand === 'list') {
-            const allowedUsers = await client.prisma.dashboardAccess.findMany();
-
-            if (allowedUsers.length === 0) {
-                return interaction.reply({ content: '📋 Aucun accès n\'a été distribué pour le moment.', flags: 64 });
+            try {
+                const allowedUsers = await client.prisma.dashboardAccess.findMany();
+    
+                if (allowedUsers.length === 0) {
+                    return interaction.reply({ content: '📋 Aucun accès n\'a été distribué pour le moment.', flags: 64 });
+                }
+    
+                const userList = allowedUsers.map((access, index) => {
+                    return `**${index + 1}.** <@${access.userId}> *(Ajouté par <@${access.addedBy}>)*`;
+                }).join('\n');
+    
+                const embed = new EmbedBuilder()
+                    .setColor('Blue')
+                    .setTitle('🔐 Liste des accès au Dashboard Web')
+                    .setDescription(userList);
+    
+                await interaction.reply({ embeds: [embed], flags: 64 });
+            } catch (error) {
+                console.error('[Dashboard List Error]', error);
+                await interaction.reply({ content: `❌ Erreur lors de la récupération des accès.`, flags: 64 });
             }
-
-            const userList = allowedUsers.map((access, index) => {
-                return `**${index + 1}.** <@${access.userId}> *(Ajouté par <@${access.addedBy}>)*`;
-            }).join('\n');
-
-            const embed = new EmbedBuilder()
-                .setColor('Blue')
-                .setTitle('🔐 Liste des accès au Dashboard Web')
-                .setDescription(userList);
-
-            await interaction.reply({ embeds: [embed], flags: 64 });
         }
     },
 };

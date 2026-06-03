@@ -18,20 +18,25 @@ module.exports = {
             const member = interaction.options.getMember('membre');
             const reason = interaction.options.getString('raison') || 'Aucune raison fournie';
 
-            await client.prisma.warn.create({
-                data: {
-                    guildId: interaction.guild.id,
-                    userId: member.id,
-                    reason: reason,
-                },
-            });
-        
-        const embed = new EmbedBuilder()
-            .setColor('Yellow')
-            .setTitle('Nouvel Avertissement')
-            .setDescription(`<@${member.id}> a été averti.\n**Raison:** ${reason}`)
-            .setFooter({ text: `Sanction appliquée par ${interaction.user.tag}` });
-
-        await interaction.reply({ embeds: [embed] });
+            try {
+                await client.prisma.warn.create({
+                    data: {
+                        guildId: interaction.guild.id,
+                        userId: member.id,
+                        reason: reason,
+                    },
+                });
+            
+                const embed = new EmbedBuilder()
+                    .setColor('Yellow')
+                    .setTitle('Nouvel Avertissement')
+                    .setDescription(`<@${member.id}> a été averti.\n**Raison:** ${reason}`)
+                    .setFooter({ text: `Sanction appliquée par ${interaction.user.tag}` });
+    
+                await interaction.reply({ embeds: [embed] });
+            } catch (error) {
+                console.error('[Warn Error]', error);
+                await interaction.reply({ content: '❌ Une erreur est survenue lors de l\'enregistrement de l\'avertissement.', ephemeral: true });
+            }
     },
 };

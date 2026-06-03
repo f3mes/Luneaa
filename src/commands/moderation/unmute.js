@@ -17,6 +17,11 @@ module.exports = {
         try {
             await member.timeout(null, `Unmute manuel par ${interaction.user.tag}`);
             
+            // Suppression de la sanction dans Prisma si elle existe
+            await client.prisma.activeSanction.deleteMany({
+                where: { userId: target.id, guildId: interaction.guild.id, type: 'MUTE' }
+            });
+
             const embed = new EmbedBuilder()
                 .setColor('Green')
                 .setTitle('🔊 Membre unmute')
@@ -24,7 +29,7 @@ module.exports = {
 
             await interaction.reply({ embeds: [embed] });
         } catch (error) {
-            console.error(error);
+            console.error('[Unmute Error]', error);
             await interaction.reply({ content: '❌ Une erreur est survenue.', ephemeral: true });
         }
     },

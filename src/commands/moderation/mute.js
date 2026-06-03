@@ -24,6 +24,17 @@ module.exports = {
         try {
             await member.timeout(durationMs, reason);
             
+            // Enregistrement de la sanction dans la base de données Prisma
+            const expiresAt = new Date(Date.now() + durationMs);
+            await client.prisma.activeSanction.create({
+                data: {
+                    userId: target.id,
+                    guildId: interaction.guild.id,
+                    type: 'MUTE',
+                    expiresAt: expiresAt
+                }
+            });
+
             const embed = new EmbedBuilder()
                 .setColor('Orange')
                 .setTitle('🔇 Membre rendu muet')
@@ -31,7 +42,7 @@ module.exports = {
 
             await interaction.reply({ embeds: [embed] });
         } catch (error) {
-            console.error(error);
+            console.error('[Mute Error]', error);
             await interaction.reply({ content: '❌ Une erreur est survenue lors du mute.', ephemeral: true });
         }
     },

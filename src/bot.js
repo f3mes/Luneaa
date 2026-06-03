@@ -12,7 +12,7 @@ const session = require('express-session');
 const passport = require('passport');
 const DiscordStrategy = require('passport-discord').Strategy;
 
-const prisma = new PrismaClient();
+client.prisma = prisma;
 
 const client = new Client({
     intents: [
@@ -172,12 +172,18 @@ app.get('/api/stats', async (req, res) => {
 });
 app.post('/api/settings/:guildId', async (req, res) => {
     if (!req.isAuthenticated()) return res.status(401).json({ error: "Non autorisé" });
-    const settings = await prisma.guildSettings.upsert({
-        where: { guildId: req.params.guildId },
-        update: req.body,
-        create: { guildId: req.params.guildId, ...req.body }
-    });
-    res.json(settings);
+    
+    try {
+        const settings = await prisma.guildSettings.upsert({
+            where: { guildId: req.params.guildId },
+            update: req.body,
+            create: { guildId: req.params.guildId, ...req.body }
+        });
+        res.json(settings);
+    } catch (error) {
+        console.error('[API Settings Update Error]', error);
+        res.status(500).json({ error: "Erreur lors de la sauvegarde côté serveur." });
+    }
 });
 
 app.get('/api/analytics', async (req, res) => {
@@ -195,41 +201,41 @@ app.get('/api/analytics', async (req, res) => {
 });
 
 
-app.get('/api/network', async (req, res) => {
+app.get('/api/network/:guildId', async (req, res) => {
     if (!req.isAuthenticated()) return res.status(401).json({ error: "Non autorisé" });
+    
+    const guildId = req.params.guildId;
 
-    try {
-        const nodes = [{ 
-            id: 'Bot', 
-            group: 1, 
-            name: client.user.username, 
-            val: 50,
-            fx: 0, fy: 0, fz: 0 
-        }];
-        const links = [];
+    const warnCount = await client.prisma.warn.count({ where: { guildId } });
+    const settings = await client.prisma.guildSettings.findUnique({ where: { guildId } });
 
-        client.guilds.cache.forEach(guild => {
-            nodes.push({ 
-                id: guild.id, 
-                group: 2, 
-                name: guild.name, 
-                val: Math.max(5, Math.min(30, guild.memberCount / 2)),
-                details: {
-                    members: guild.memberCount,
-                    channels: guild.channels.cache.size,
-                    roles: guild.roles.cache.size,
-                    boosts: guild.premiumSubscriptionCount || 0
-                }
-            });
-            
-            links.push({ source: 'Bot', target: guild.id });
-        });
+    const nodes = [
+        { id: 'Center', group: 2, name: 'Serveur', val: 30, fx: 0, fy: 0, fz: 0 },
+        { id: 'Warns', group: 4, name: '⚠️ Warns', val: 15, details: { rows: warnCount, type: 'Table Prisma' }},
+        { id: 'Config', group: 3, name: '⚙️ Config', val: 15, details: { rows: settings ? 1 : 0, type: 'Table Prisma' }}
+    ];
+    
+    const links = [{ source: 'Center', target: 'Warns' }, { source: 'Center', target: 'Config' }];
+    
+    res.json({ nodes, links });
+});
 
-        res.json({ nodes, links });
-    } catch (error) {
-        console.error('[API 3D Error]', error);
-        res.status(500).json({ error: "Erreur de génération spatiale" });
-    }
+app.get('/api/network/:guildId', async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ error: "Non autorisé" });
+    const guild = client.guilds.cache.get(req.params.guildId);
+    if (!guild) return res.status(404).json({ error: "Serveur introuvable" });
+
+    const nodes = [{ id: 'Center', group: 2, name: guild.name, val: 30, fx: 0, fy: 0, fz: 0 }];
+    const tables = [
+        { id: 'Config', group: 3, name: '⚙️ Config', rows: 1 },
+        { id: 'Warns', group: 4, name: '⚠️ Warns', rows: 14 }
+    ];
+    const links = [];
+    tables.forEach(table => {
+        nodes.push({ id: table.id, group: table.group, name: table.name, val: 15, details: { rows: table.rows, type: 'Table Prisma' }});
+        links.push({ source: 'Center', target: table.id });
+    });
+    res.json({ nodes, links });
 });
 
 app.get('/logout', (req, res) => {

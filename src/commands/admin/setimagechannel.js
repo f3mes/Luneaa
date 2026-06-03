@@ -10,12 +10,17 @@ module.exports = {
     async execute(interaction, client) {
         const channel = interaction.options.getChannel('salon');
 
-        await client.prisma.guildSettings.upsert({
-            where: { guildId: interaction.guild.id },
-            update: { imageChannelId: channel.id },
-            create: { guildId: interaction.guild.id, imageChannelId: channel.id }
-        });
-
-        await interaction.reply({ content: `✅ Salon image configuré sur <#${channel.id}>.`, ephemeral: true });
+        try {
+            await client.prisma.guildSettings.upsert({
+                where: { guildId: interaction.guild.id },
+                update: { imageChannelId: channel.id },
+                create: { guildId: interaction.guild.id, imageChannelId: channel.id }
+            });
+    
+            await interaction.reply({ content: `✅ Salon image configuré sur <#${channel.id}>.`, ephemeral: true });
+        } catch (error) {
+            console.error('[SetImageChannel Error]', error);
+            await interaction.reply({ content: '❌ Erreur de base de données lors de la sauvegarde.', ephemeral: true });
+        }
     },
 };
