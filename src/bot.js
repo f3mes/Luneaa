@@ -170,6 +170,7 @@ app.get('/api/stats', async (req, res) => {
         res.status(500).json({ error: "Erreur d'agrégation des Shards" });
     }
 });
+
 app.post('/api/settings/:guildId', async (req, res) => {
     if (!req.isAuthenticated()) return res.status(401).json({ error: "Non autorisé" });
     
@@ -198,6 +199,27 @@ app.get('/api/analytics', async (req, res) => {
         ]
     };
     res.json(stats);
+});
+
+
+app.get('/api/network', async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ error: "Non autorisé" });
+    try {
+        const nodes = [{ id: 'Bot', group: 1, name: client.user.username, val: 40, fx: 0, fy: 0, fz: 0 }];
+        const links = [];
+
+        client.guilds.cache.forEach(guild => {
+            nodes.push({ 
+                id: guild.id, group: 2, name: guild.name, 
+                val: Math.max(8, Math.min(25, guild.memberCount / 2))
+            });
+            links.push({ source: 'Bot', target: guild.id });
+        });
+
+        res.json({ nodes, links });
+    } catch (error) {
+        res.status(500).json({ error: "Erreur spatiale" });
+    }
 });
 
 
@@ -244,7 +266,6 @@ const io = new Server(server, {
     }
 });
 
-
 const originalLog = console.log;
 const originalError = console.error;
 
@@ -258,10 +279,8 @@ console.error = function(...args) {
     io.emit('terminal-log', { type: 'error', message: args.join(' ') });
 };
 
-
 io.on('connection', (socket) => {
     socket.emit('terminal-log', { type: 'log', message: '🟢 Connexion au tunnel WebSocket établie avec succès.' });
-
 
     socket.on('restart-bot', () => {
         console.log("🔴 [SYSTEM] Ordre de redémarrage reçu depuis le Dashboard ! Extinction...");
@@ -271,10 +290,8 @@ io.on('connection', (socket) => {
     });
 });
 
-
 server.listen(webPort, '0.0.0.0', () => {
     console.log(`🌐 [Web] Interface et Tunnel WebSocket ouverts sur le port ${webPort}`);
 });
-
 
 client.login(process.env.TOKEN);
