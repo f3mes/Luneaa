@@ -1,57 +1,68 @@
-
 <script setup>
-import { ref, onMounted } from 'vue'
-import { Line } from 'vue-chartjs'
-import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js'
+import { ref, onMounted, onUnmounted } from 'vue'
+import ForceGraph3D from '3d-force-graph'
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend)
-
-const chartData = ref({ labels: [], datasets: [] })
-const logs = ref([])
+const graphContainer = ref(null)
+const isLoading = ref(true)
+let graph = null
 
 onMounted(async () => {
-  const res = await fetch('/api/analytics')
-  const data = await res.json()
-  
-  logs.value = data.logs
-  chartData.value = {
-    labels: data.labels,
-    datasets: [{
-      label: 'Commandes traitées',
-      backgroundColor: '#5865F2',
-      borderColor: '#5865F2',
-      data: data.commands
-    }]
+  try {
+    const res = await fetch('/api/network')
+    const data = await res.json()
+
+    isLoading.value = false
+
+    setTimeout(() => {
+      graph = ForceGraph3D()(graphContainer.value)
+        .graphData(data)
+        .backgroundColor('#000000') 
+        .nodeLabel('name')
+        .nodeAutoColorBy('group') 
+        .nodeVal('val') 
+        .linkDirectionalParticles(2) 
+        .linkDirectionalParticleSpeed(d => d.value * 0.001 || 0.005)
+        
+        let angle = 0;
+        setInterval(() => {
+          if(graph) {
+            graph.cameraPosition({
+              x: 200 * Math.sin(angle),
+              z: 200 * Math.cos(angle)
+            });
+            angle += Math.PI / 800;
+          }
+        }, 30);
+    }, 100);
+
+  } catch (error) {
+    console.error("Erreur de chargement de l'univers 3D", error)
   }
+})
+
+onUnmounted(() => {
+  if (graph) graph._destructor() 
 })
 </script>
 
 <template>
-  <div class="space-y-8">
-    <h2 class="text-2xl font-bold">Analytique Luneaa</h2>
-    
-    <div class="bg-dark p-6 rounded-xl border border-gray-700 h-64">
-      <Line v-if="chartData.labels.length" :data="chartData" :options="{ responsive: true, maintainAspectRatio: false }" />
+  <div class="h-full flex flex-col gap-4">
+    <div class="flex justify-between items-center border-b border-gray-700 pb-4">
+      <h2 class="text-2xl font-bold flex items-center gap-2">🌌 Cartographie Réseau 3D</h2>
     </div>
 
-    <div class="bg-dark p-6 rounded-xl border border-gray-700">
-      <h3 class="font-bold mb-4">Dernières actions de modération</h3>
-      <table class="w-full text-left border-collapse">
-        <thead>
-          <tr class="text-gray-400 text-sm">
-            <th class="py-2">Action</th>
-            <th class="py-2">Utilisateur</th>
-            <th class="py-2">Heure</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="log in logs" :key="log.id" class="border-t border-gray-800">
-            <td class="py-2 text-red-400">{{ log.action }}</td>
-            <td class="py-2">{{ log.user }}</td>
-            <td class="py-2">{{ log.time }}</td>
-          </tr>
-        </tbody>
-      </table>
+    <div class="relative flex-grow bg-black border border-gray-800 rounded-xl overflow-hidden shadow-inner min-h-[500px]">
+      
+      <div v-if="isLoading" class="absolute inset-0 flex items-center justify-center z-10 text-discord animate-pulse font-bold text-xl">
+        Calcul des coordonnées spatiales...
+      </div>
+
+      <div ref="graphContainer" class="absolute inset-0"></div>
+      
+      <div class="absolute bottom-4 left-4 z-10 text-xs text-gray-500 font-mono pointer-events-none">
+        > MOTEUR: WebGL / Three.js<br>
+        > CTRL: Souris pour orbiter / Molette pour zoomer
+      </div>
     </div>
   </div>
 </template>

@@ -194,6 +194,32 @@ app.get('/api/analytics', async (req, res) => {
     res.json(stats);
 });
 
+
+app.get('/api/network', async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).json({ error: "Non autorisé" });
+
+    try {
+        const nodes = [{ id: 'Bot', group: 1, name: client.user.username, val: 50 }];
+        const links = [];
+
+        client.guilds.cache.forEach(guild => {
+            nodes.push({ 
+                id: guild.id, 
+                group: 2, 
+                name: `${guild.name} (${guild.memberCount} membres)`, 
+                val: Math.max(5, Math.min(30, guild.memberCount / 2)) 
+            });
+            
+            links.push({ source: 'Bot', target: guild.id });
+        });
+
+        res.json({ nodes, links });
+    } catch (error) {
+        console.error('[API 3D Error]', error);
+        res.status(500).json({ error: "Erreur de génération spatiale" });
+    }
+});
+
 app.get('/logout', (req, res) => {
     req.logout(() => { res.redirect('/'); });
 });
