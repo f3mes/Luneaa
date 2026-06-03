@@ -12,7 +12,7 @@ const session = require('express-session');
 const passport = require('passport');
 const DiscordStrategy = require('passport-discord').Strategy;
 
-client.prisma = prisma;
+const prisma = new PrismaClient();
 
 const client = new Client({
     intents: [
