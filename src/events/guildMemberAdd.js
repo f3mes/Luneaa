@@ -1,4 +1,4 @@
-// Fichier : src/events/guildMemberAdd.js
+// src/events/guildMemberAdd.js
 
 const { Events, EmbedBuilder } = require('discord.js');
 
@@ -12,7 +12,7 @@ module.exports = {
             const welcomeChannel = member.guild.channels.cache.get(welcomeChannelId);
             
             if (!welcomeChannel) {
-                console.warn(`[Alerte] Le salon de bienvenue (${welcomeChannelId}) est introuvable sur le serveur ${member.guild.name}.`);
+                console.warn(`[WARN_SYSTEM] Le salon de bienvenue (${welcomeChannelId}) est introuvable sur le serveur ${member.guild.name}. Abandon du processus.`);
                 return;
             }
 
@@ -22,7 +22,7 @@ module.exports = {
                 .setDescription([
                     "✧˚ · . 𝐔𝐧𝐞 𝐧𝐨𝐮𝐯𝐞𝐥𝐥𝐞 𝐚𝐩𝐩𝐚𝐫𝐢𝐭𝐢𝐨𝐧 ! . · ˚✧",
                     "",
-                    `𝐒𝐨𝐮𝐡𝐚𝐢𝐭𝐞𝐳 𝐮𝐧𝐞 𝐢𝐦𝐦𝐞𝐧𝐬𝐞 𝐛𝐢𝐞𝐧𝐯𝐞𝐧𝐮𝐞 𝐚 <@${member.id}> ! (¯ ³¯)♡`,
+                    `𝐁𝐢𝐞𝐧𝐯𝐞𝐧𝐮𝐞 𝐝𝐚𝐧𝐬 𝐥'𝐮𝐧𝐢𝐯𝐞𝐫𝐬 𝐋𝐮𝐧𝐞𝐚𝐚 <@${member.id}> ! (¯ ³¯)♡`,
                     "",
                     "𝐈𝐧𝐬𝐭𝐚𝐥𝐥𝐞-𝐭𝐨𝐢 𝐜𝐨𝐧𝐟𝐨𝐫𝐭𝐚𝐛𝐥𝐞𝐦𝐞𝐧𝐭 𝐞𝐭 𝐩𝐫𝐨𝐟𝐢𝐭𝐞 𝐝𝐞 𝐥'𝐚𝐦𝐛𝐢𝐚𝐧𝐜𝐞 ⋆｡˚",
                     "𝐅𝐚𝐢𝐭𝐞𝐬 𝐝𝐮 𝐛𝐫𝐮𝐢𝐭 𝐩𝐨𝐮𝐫 𝐥'𝐚𝐜𝐜𝐮𝐞𝐢𝐥𝐥𝐢𝐫 𝐜𝐨𝐦𝐦𝐞 𝐢𝐥 𝐬𝐞 𝐝𝐨𝐢𝐭 !! 🎉"
@@ -34,7 +34,7 @@ module.exports = {
             });
 
         } catch (error) {
-            console.error(`[GuildMemberAdd Error] Erreur critique lors de l'accueil:`, error.message);
+            console.error(`[FATAL_GuildMemberAdd] Erreur de traitement sur le serveur ${member.guild.id}:`, error.message);
         }
     },
 };
