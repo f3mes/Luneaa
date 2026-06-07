@@ -1,3 +1,5 @@
+// Fichier : src/events/guildMemberAdd.js
+
 const { Events, EmbedBuilder } = require('discord.js');
 
 module.exports = {
@@ -6,15 +8,13 @@ module.exports = {
         if (member.user.bot) return;
 
         try {
-            const settings = await client.prisma.guildSettings.findUnique({
-                where: { guildId: member.guild.id },
-                select: { welcomeChannelId: true } 
-            });
-
-            if (!settings || !settings.welcomeChannelId) return;
-
-            const welcomeChannel = member.guild.channels.cache.get(settings.welcomeChannelId);
-            if (!welcomeChannel) return;
+            const welcomeChannelId = '1495067645337141415';
+            const welcomeChannel = member.guild.channels.cache.get(welcomeChannelId);
+            
+            if (!welcomeChannel) {
+                console.warn(`[Alerte] Le salon de bienvenue (${welcomeChannelId}) est introuvable sur le serveur ${member.guild.name}.`);
+                return;
+            }
 
             const welcomeEmbed = new EmbedBuilder()
                 .setColor('#95b7e8')
@@ -34,7 +34,7 @@ module.exports = {
             });
 
         } catch (error) {
-            console.error(`[GuildMemberAdd Error] Serveur: ${member.guild.id} | Erreur:`, error.message);
+            console.error(`[GuildMemberAdd Error] Erreur critique lors de l'accueil:`, error.message);
         }
     },
 };
