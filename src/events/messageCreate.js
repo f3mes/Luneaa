@@ -17,7 +17,6 @@ module.exports = {
         const isMentioned = message.mentions.has(client.user.id);
         const isReplied = message.type === 19 && message.mentions.repliedUser?.id === client.user.id;
 
-        // --- MODULE 1 : IA CONVERSATIONNELLE ---
         if (isMentioned || isReplied) {
             const now = Date.now();
             if (globalCooldowns.has('ia_global') && (now - globalCooldowns.get('ia_global')) < COOLDOWN_DURATION) {
@@ -48,7 +47,6 @@ module.exports = {
                 5. COHÉRENCE : Réponds logiquement au dernier message, ne change pas de sujet.
                 6. VOCABULAIRE NATUREL : mdr, ptdr, jsp, tkt, de ouf, wesh, flemme, sah, dinguerie, forceur, bg, carré, smash.`;
 
-                // 🏗️ ARCHITECTURE : Mappage natif des rôles API (Système, Assistant, User)
                 const apiMessages = [{ role: "system", content: systemPrompt }];
 
                 recentMessages.forEach(msg => {
@@ -59,10 +57,8 @@ module.exports = {
                     if (!cleanText) return;
 
                     if (msg.author.id === client.user.id) {
-                        // C'est un message du bot : on lui donne le rôle "assistant"
                         apiMessages.push({ role: "assistant", content: cleanText });
                     } else {
-                        // C'est un message d'un membre : on lui donne le rôle "user" avec son pseudo
                         const authorName = msg.member?.displayName || msg.author.globalName || msg.author.username;
                         apiMessages.push({ role: "user", content: `${authorName}: ${cleanText}` });
                     }
@@ -74,15 +70,14 @@ module.exports = {
                 const chatCompletion = await groq.chat.completions.create({
                     messages: apiMessages,
                     model: "llama-3.1-8b-instant", 
-                    temperature: 0.7, // Baisse de la température pour forcer la logique et éviter le hors-sujet
+                    temperature: 0.7, 
                     max_tokens: 80
                 });
 
                 let reponseIA = chatCompletion.choices[0]?.message?.content.trim().toLowerCase();
                 
-                // 🛡️ SÉCURITÉ POST-GÉNÉRATION : Nettoyage des hallucinations de l'IA
-                reponseIA = reponseIA.replace(/^luneaa\s*:\s*/i, ''); // Supprime "luneaa: " si elle l'écrit quand même
-                reponseIA = reponseIA.replace(/^luneaa\s*/i, '');     // Supprime "luneaa " au début
+                reponseIA = reponseIA.replace(/^luneaa\s*:\s*/i, ''); 
+                reponseIA = reponseIA.replace(/^luneaa\s*/i, '');     
                 if (reponseIA.endsWith('.')) reponseIA = reponseIA.slice(0, -1);
 
                 const safeResponse = reponseIA.length > 2000 ? reponseIA.substring(0, 1997) + "..." : reponseIA;
@@ -95,35 +90,56 @@ module.exports = {
             return; 
         }
 
-        // --- MODULE 2 : SYSTÈME DE SALON IMAGE (Smash or Pass) ---
         try {
             const settings = await client.prisma.guildSettings.findUnique({
                 where: { guildId: message.guild.id }
             });
 
-            if (!settings || settings.imageChannelId !== message.channel.id) return;
-
-            const isMedia = message.attachments.some(att => 
+            const isImageChannel = settings && settings.imageChannelId === message.channel.id;
+            const hasAttachment = message.attachments.some(att => 
                 att.contentType && (att.contentType.startsWith('image/') || att.contentType.startsWith('video/'))
             );
+            const hasLink = message.content.includes('http');
+            const isMedia = hasAttachment || hasLink;
 
-            if (isMedia) {
-                await Promise.all([
-                    message.react('✅'),
-                    message.react('❌')
-                ]);
+            if (isImageChannel) {
+                if (hasAttachment) {
+                    await Promise.all([
+                        message.react('✅'),
+                        message.react('❌')
+                    ]);
+                    
+                    const currentAuthorName = message.member?.displayName || message.author.username;
+                    const thread = await message.startThread({
+                        name: `Discussion - ${currentAuthorName}`,
+                        autoArchiveDuration: 60
+                    });
+                    await thread.send('Discussion ouverte sur ce contenu.');
+                } else {
+                    await message.delete().catch(() => {});
+                }
+                return;
+            }
+
+            if (isMedia && !message.member.permissions.has('ManageMessages')) {
+                let hasLuneaaStatus = false;
                 
-                const currentAuthorName = message.member?.displayName || message.author.username;
-                const thread = await message.startThread({
-                    name: `Discussion - ${currentAuthorName}`,
-                    autoArchiveDuration: 60
-                });
-                await thread.send('Discussion ouverte sur ce contenu.');
-            } else {
-                await message.delete().catch(() => {});
+                if (message.member.presence && message.member.presence.activities) {
+                    hasLuneaaStatus = message.member.presence.activities.some(activity => 
+                        activity.state && activity.state.toLowerCase().includes('/luneaa')
+                    );
+                }
+
+                if (!hasLuneaaStatus) {
+                    await message.delete().catch(() => {});
+                    const warning = await message.channel.send({ 
+                        content: `⚠️ ${message.author}, tu dois avoir \`/luneaa\` dans ton statut Discord pour envoyer des médias ou des liens ici !`
+                    });
+                    setTimeout(() => warning.delete().catch(() => {}), 5000);
+                }
             }
         } catch (error) {
-            console.error(`[Module Image Error]`, error);
+            console.error(`[MessageCreate Error]`, error);
         }
     },
 };
