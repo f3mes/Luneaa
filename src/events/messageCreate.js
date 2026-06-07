@@ -8,6 +8,7 @@ if (!process.env.GROQ_API_KEY) {
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 const globalCooldowns = new Collection();
 const COOLDOWN_DURATION = 2000;
+const BYPASS_ROLE_ID = '1500554862830682212';
 
 module.exports = {
     name: Events.MessageCreate,
@@ -121,21 +122,26 @@ module.exports = {
                 return;
             }
 
-            if (isMedia && !message.member.permissions.has('ManageMessages')) {
-                let hasLuneaaStatus = false;
-                
-                if (message.member.presence && message.member.presence.activities) {
-                    hasLuneaaStatus = message.member.presence.activities.some(activity => 
-                        activity.state && activity.state.toLowerCase().includes('/luneaa')
-                    );
-                }
+            const hasAdmin = message.member.permissions.has('ManageMessages');
+            const hasBypassRole = message.member.roles.cache.has(BYPASS_ROLE_ID);
+
+            if (isMedia && !hasAdmin && !hasBypassRole) {
+                const activities = message.member.presence?.activities || [];
+                const hasLuneaaStatus = activities.some(activity => 
+                    activity.state?.toLowerCase().includes('/luneaa')
+                );
 
                 if (!hasLuneaaStatus) {
                     await message.delete().catch(() => {});
-                    const warning = await message.channel.send({ 
-                        content: `⚠️ ${message.author}, tu dois avoir \`/luneaa\` dans ton statut Discord pour envoyer des médias ou des liens ici !`
-                    });
-                    setTimeout(() => warning.delete().catch(() => {}), 5000);
+                    
+                    try {
+                        await message.author.send(`⚠️ Tu dois avoir \`/luneaa\` dans ton statut Discord (ou le rôle VIP) pour envoyer des médias dans le salon <#${message.channel.id}> !`);
+                    } catch (err) {
+                        const warning = await message.channel.send({ 
+                            content: `⚠️ ${message.author}, tu dois avoir \`/luneaa\` dans ton statut Discord pour envoyer des médias ici !`
+                        });
+                        setTimeout(() => warning.delete().catch(() => {}), 5000);
+                    }
                 }
             }
         } catch (error) {
